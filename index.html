@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <meta name="description" content="Create, edit, and download beautifully formatted A4 PDFs instantly. Free Smart Student PDF Maker with voice typing, watermark, and custom borders.">
+    <meta name="keywords" content="PDF maker, student notes, online PDF editor, text to PDF, voice typing to PDF">
+    <meta name="author" content="Smart Student PDF Maker">
+    <meta property="og:title" content="Smart Student PDF Maker">
+    <meta property="og:description" content="Instantly create beautifully formatted A4 PDFs for assignments. Free & fast.">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#4F46E5">
+
+    <title>Smart Student PDF Maker - Perfect Notes to PDF</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        /* --- CSS VARIABLES & THEMING --- */
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338CA;
+            --bg-color: #F3F4F6;
+            --surface: #FFFFFF;
+            --text-main: #1F2937;
+            --text-muted: #6B7280;
+            --border: #E5E7EB;
+            --danger: #EF4444;
+            --success: #10B981;
+            --a4-width: 794px;
+            --a4-height: 1123px;
+            --transition: all 0.3s ease;
+        }
+
+        body.dark-mode {
+            --bg-color: #111827;
+            --surface: #1F2937;
+            --text-main: #F9FAFB;
+            --text-muted: #9CA3AF;
+            --border: #374151;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); transition: var(--transition); line-height: 1.6; overflow-x: hidden; }
+
+        .btn { background-color: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: var(--transition); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
+        .hidden { display: none !important; }
+
+        nav { display: flex; justify-content: space-between; align-items: center; padding: 15px 5%; background-color: var(--surface); box-shadow: 0 1px 3px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+        .logo { font-size: 1.2rem; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 10px; }
+
+        #landing { min-height: calc(100vh - 70px); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+        #landing h1 { font-size: clamp(2rem, 5vw, 3rem); margin-bottom: 20px; color: var(--text-main); }
+        #landing p { font-size: 1.1rem; color: var(--text-muted); max-width: 600px; margin-bottom: 40px; }
+
+        #app-section { padding: 20px 5%; max-width: 1400px; margin: 0 auto; }
+        .app-grid { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; }
+        @media (max-width: 1024px) { .app-grid { grid-template-columns: 1fr; } }
+
+        .panel { background: var(--surface); padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .panel h3 { margin-bottom: 15px; font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 0.9rem; margin-bottom: 5px; color: var(--text-muted); }
+        .form-group input, .form-group select { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-color); color: var(--text-main); }
+
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .stat-box { background: var(--bg-color); padding: 10px; border-radius: 8px; text-align: center; }
+        .stat-value { font-weight: bold; font-size: 1.2rem; color: var(--primary); }
+        .stat-label { font-size: 0.8rem; color: var(--text-muted); }
+
+        .editor-wrapper { display: flex; flex-direction: column; align-items: center; width: 100%; overflow-x: auto;}
+        .toolbar { width: 100%; max-width: var(--a4-width); background: var(--surface); padding: 10px; border-radius: 12px 12px 0 0; border: 1px solid var(--border); border-bottom: none; display: flex; flex-wrap: wrap; gap: 5px; position: sticky; top: 60px; z-index: 10; }
+        .tool-btn { background: transparent; border: none; color: var(--text-main); width: 35px; height: 35px; border-radius: 5px; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; }
+        .tool-btn:hover { background: var(--border); }
+        .tool-divider { width: 1px; background: var(--border); margin: 0 5px; }
+
+        .a4-container { width: 100%; min-width: 300px; max-width: var(--a4-width); background: white; min-height: var(--a4-height); box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-radius: 0 0 12px 12px; padding: 40px; margin-bottom: 20px; position: relative; overflow-x: auto; transition: border 0.3s; }
+        body.dark-mode .a4-container { background: #2D3748; }
+        
+        #editor { width: 100%; min-height: calc(var(--a4-height) - 80px); outline: none; color: black; font-size: 16px; line-height: 1.5; }
+        body.dark-mode #editor { color: white; }
+        
+        #editor > p, #editor > div, #editor > img, #editor > table, #editor > ul, #editor > h1, #editor > h2, #editor > h3 { page-break-inside: avoid; break-inside: avoid; }
+        #editor table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+        #editor table, #editor th, #editor td { border: 1px solid var(--border); padding: 8px; }
+        #editor img { max-width: 100%; height: auto; border-radius: 5px; margin: 10px 0; display: block; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+
+        #page-warning { background: var(--danger); color: white; text-align: center; padding: 10px; border-radius: 8px; margin-bottom: 15px; display: none; font-weight: bold; width: 100%; max-width: var(--a4-width);}
+
+        .save-badge { font-size: 0.8rem; color: var(--success); display: flex; align-items: center; gap: 5px; opacity: 0; transition: opacity 0.5s; }
+        .drag-over { border: 2px dashed var(--primary) !important; background-color: rgba(79, 70, 229, 0.05) !important; }
+    </style>
+</head>
+<body>
+
+    <input type="file" id="imageUpload" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
+
+    <nav>
+        <div class="logo">
+            <i class="fa-solid fa-graduation-cap"></i> Smart Student PDF
+        </div>
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <span class="save-badge" id="saveBadge">
+                <i class="fa-solid fa-check-circle"></i> Saved
+            </span>
+            <button class="tool-btn" onclick="toggleTheme()" title="Toggle Dark Mode">
+                <i class="fa-solid fa-moon" id="themeIcon"></i>
+            </button>
+        </div>
+    </nav>
+
+    <div id="landing">
+        <h1>Perfect Notes. Flawless PDFs.</h1>
+        <p>Write notes, paste assignments, and instantly convert them into beautifully formatted A4 PDFs ready for submission.</p>
+        <button class="btn" style="font-size: 1.2rem; padding: 15px 30px;" onclick="startWriting()">
+            <i class="fa-solid fa-pen-nib"></i> Start Writing
+        </button>
+    </div>
+
+    <div id="app-section" class="hidden">
+        <div class="app-grid">
+            
+            <div class="sidebar">
+                <div class="panel">
+                    <h3><i class="fa-solid fa-address-card"></i> Assignment Details</h3>
+                    <div class="form-group"><label>Assignment Title</label><input type="text" id="pdfTitle" placeholder="e.g. Physics Notes"></div>
+                    <div class="form-group"><label>Student Name</label><input type="text" id="pdfName" placeholder="Your Name"></div>
+                    <div class="form-group"><label>Subject / Course</label><input type="text" id="pdfSubject" placeholder="e.g. PHY-11"></div>
+                    <div class="form-group"><label>Date</label><input type="date" id="pdfDate"></div>
+                </div>
+
+                <div class="panel">
+                    <h3><i class="fa-solid fa-palette"></i> Design & Settings</h3>
+                    <div class="form-group"><label>Watermark Text</label><input type="text" id="pdfWatermark" placeholder="e.g. DRAFT" oninput="applyEditorStyles()"></div>
+                    <div class="form-group">
+                        <label>Page Border</label>
+                        <select id="pdfBorder" onchange="applyEditorStyles()">
+                            <option value="none" selected>No Border</option>
+                            <option value="solid">Solid Line</option>
+                            <option value="dashed">Dashed Line</option>
+                            <option value="double">Double Line</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Font Size</label>
+                        <select id="pdfFontSize" onchange="applyEditorStyles()">
+                            <option value="14px">Small (14px)</option>
+                            <option value="16px" selected>Normal (16px)</option>
+                            <option value="18px">Large (18px)</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+                        <button class="btn" onclick="generatePDF()"><i class="fa-solid fa-download"></i> Download PDF</button>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3><i class="fa-solid fa-chart-pie"></i> Live Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-box"><div class="stat-value" id="statWords">0</div><div class="stat-label">Words</div></div>
+                        <div class="stat-box"><div class="stat-value" id="statChars">0</div><div class="stat-label">Characters</div></div>
+                        <div class="stat-box"><div class="stat-value" id="statLines">1</div><div class="stat-label">Lines</div></div>
+                        <div class="stat-box"><div class="stat-value" id="statParas">0</div><div class="stat-label">Paragraphs</div></div>
+                        <div class="stat-box"><div class="stat-value" id="statPages">1 / 12</div><div class="stat-label">Pages</div></div>
+                        <div class="stat-box"><div class="stat-value" id="statReadTime">0 min</div><div class="stat-label">Read Time</div></div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3><i class="fa-solid fa-microphone-lines"></i> Speech Tools</h3>
+                    
+                    <div class="form-group">
+                        <label>Language (Bhasha)</label>
+                        <select id="voiceLang">
+                            <option value="en-US" selected>English (US)</option>
+                            <option value="en-IN">English (India)</option>
+                            <option value="hi-IN">Hindi (हिंदी)</option>
+                        </select>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <button class="btn" id="btnDictate" onclick="toggleDictation()" style="flex: 1;">
+                            <i class="fa-solid fa-microphone"></i> Start Voice
+                        </button>
+                    </div>
+                    <hr style="border:0; border-top:1px solid var(--border); margin: 15px 0;">
+                    
+                    <div class="form-group">
+                        <label>Read Aloud Speed</label>
+                        <input type="range" id="speechSpeed" min="0.5" max="2" step="0.1" value="1">
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="tool-btn" onclick="speakText()" title="Play"><i class="fa-solid fa-play"></i></button>
+                        <button class="tool-btn" onclick="pauseSpeech()" title="Pause"><i class="fa-solid fa-pause"></i></button>
+                        <button class="tool-btn" onclick="stopSpeech()" title="Stop"><i class="fa-solid fa-stop"></i></button>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="editor-wrapper">
+                <div id="page-warning"><i class="fa-solid fa-triangle-exclamation"></i> Warning: Maximum limit of 12 pages reached.</div>
+                
+                <div class="toolbar">
+                    <button class="tool-btn" onclick="execCmd('bold')" title="Bold"><i class="fa-solid fa-bold"></i></button>
+                    <button class="tool-btn" onclick="execCmd('italic')" title="Italic"><i class="fa-solid fa-italic"></i></button>
+                    <button class="tool-btn" onclick="execCmd('underline')" title="Underline"><i class="fa-solid fa-underline"></i></button>
+                    <div class="tool-divider"></div>
+                    <button class="tool-btn" onclick="execCmd('formatBlock', 'H1')" title="Heading 1"><b>H1</b></button>
+                    <button class="tool-btn" onclick="execCmd('formatBlock', 'H2')" title="Heading 2"><b>H2</b></button>
+                    <button class="tool-btn" onclick="execCmd('formatBlock', 'H3')" title="Heading 3"><b>H3</b></button>
+                    <div class="tool-divider"></div>
+                    <button class="tool-btn" onclick="execCmd('insertUnorderedList')" title="Bullet List"><i class="fa-solid fa-list-ul"></i></button>
+                    <button class="tool-btn" onclick="execCmd('insertOrderedList')" title="Number List"><i class="fa-solid fa-list-ol"></i></button>
+                    <div class="tool-divider"></div>
+                    <button class="tool-btn" onclick="execCmd('justifyLeft')" title="Align Left"><i class="fa-solid fa-align-left"></i></button>
+                    <button class="tool-btn" onclick="execCmd('justifyCenter')" title="Align Center"><i class="fa-solid fa-align-center"></i></button>
+                    <button class="tool-btn" onclick="execCmd('justifyRight')" title="Align Right"><i class="fa-solid fa-align-right"></i></button>
+                    <div class="tool-divider"></div>
+                    <button class="tool-btn" onclick="document.getElementById('imageUpload').click()" title="Upload Image from Gallery"><i class="fa-regular fa-image"></i></button>
+                    <button class="tool-btn" onclick="insertTable()" title="Insert Table"><i class="fa-solid fa-table"></i></button>
+                    <div class="tool-divider"></div>
+                    <button class="tool-btn" onclick="copyAllText()" title="Copy All Text"><i class="fa-regular fa-copy"></i></button>
+                    <button class="tool-btn" onclick="clearEditor()" title="Clear All" style="color: var(--danger);"><i class="fa-solid fa-trash"></i></button>
+                </div>
+
+                <div class="a4-container" id="a4Container">
+                    <div id="editor" contenteditable="true" spellcheck="true" placeholder="Start typing your notes, click the image icon to upload, or DRAG & DROP an image here..."></div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <script>
+        const landing = document.getElementById('landing');
+        const appSection = document.getElementById('app-section');
+        const editor = document.getElementById('editor');
+        const a4Container = document.getElementById('a4Container');
+        const saveBadge = document.getElementById('saveBadge');
+        const pageWarning = document.getElementById('page-warning');
+
+        // --- Core UI Functions ---
+        function startWriting() {
+            landing.classList.add('hidden');
+            appSection.classList.remove('hidden');
+            editor.focus();
+            loadAutoSave();
+            updateStats();
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const icon = document.getElementById('themeIcon');
+            if (document.body.classList.contains('dark-mode')) {
+                icon.classList.replace('fa-moon', 'fa-sun');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                icon.classList.replace('fa-sun', 'fa-moon');
+                localStorage.setItem('theme', 'light');
+            }
+        }
+        if (localStorage.getItem('theme') === 'dark') toggleTheme();
+
+        function execCmd(command, value = null) {
+            editor.focus();
+            document.execCommand(command, false, value);
+            updateStats();
+            triggerSave();
+        }
+
+        function copyAllText() {
+            navigator.clipboard.writeText(editor.innerText).then(() => {
+                alert('Text copied to clipboard!');
+            });
+        }
+
+        function clearEditor() { 
+            if (confirm('Are you sure you want to clear all text?')) { 
+                editor.innerHTML = ''; 
+                updateStats();
+                triggerSave(); 
+            } 
+        }
+
+        // --- Image Upload & Drag/Drop ---
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    editor.focus();
+                    execCmd('insertImage', e.target.result);
+                };
+                reader.readAsDataURL(file);
+            }
+            event.target.value = ''; 
+        }
+
+        a4Container.addEventListener('dragover', (e) => { e.preventDefault(); a4Container.classList.add('drag-over'); });
+        a4Container.addEventListener('dragleave', (e) => { e.preventDefault(); a4Container.classList.remove('drag-over'); });
+        a4Container.addEventListener('drop', (e) => {
+            e.preventDefault();
+            a4Container.classList.remove('drag-over');
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                const file = e.dataTransfer.files[0];
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        editor.focus();
+                        execCmd('insertImage', event.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    alert("Please drop an image file.");
+                }
+            }
+        });
+
+        // Smart Paste Fix
+        editor.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const text = (e.originalEvent || e).clipboardData.getData('text/plain');
+            const formattedText = text.replace(/\n/g, '<br>');
+            document.execCommand('insertHTML', false, formattedText);
+        });
+
+        function insertTable() {
+            const rows = prompt('Number of rows:', '2');
+            const cols = prompt('Number of columns:', '2');
+            if (rows && cols) {
+                let html = '<table style="width:100%; border-collapse:collapse; margin: 15px 0;"><tbody>';
+                for (let i = 0; i < rows; i++) {
+                    html += '<tr>';
+                    for (let j = 0; j < cols; j++) html += '<td style="border:1px solid #ccc; padding:8px;">Cell</td>';
+                    html += '</tr>';
+                }
+                html += '</tbody></table><p><br></p>';
+                execCmd('insertHTML', html);
+            }
+        }
+
+        // --- Design Settings (Border & Watermark) ---
+        function applyEditorStyles() {
+            const size = document.getElementById('pdfFontSize').value;
+            editor.style.fontSize = size;
+            
+            const borderStyle = document.getElementById('pdfBorder').value;
+            if (borderStyle !== 'none') {
+                a4Container.style.border = `4px ${borderStyle} #1F2937`;
+                a4Container.style.padding = '36px'; 
+            } else {
+                a4Container.style.border = 'none';
+                a4Container.style.padding = '40px';
+            }
+            
+            const watermarkText = document.getElementById('pdfWatermark').value.trim();
+            if (watermarkText) {
+                const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><text x="50%" y="50%" transform="rotate(-45 200 200)" fill="rgba(0,0,0,0.06)" font-size="45" font-family="Arial" font-weight="bold" text-anchor="middle" dominant-baseline="middle">${watermarkText}</text></svg>`;
+                a4Container.style.backgroundImage = `url('data:image/svg+xml;utf8,${encodeURIComponent(svg)}')`;
+                a4Container.style.backgroundRepeat = 'repeat';
+            } else {
+                a4Container.style.backgroundImage = 'none';
+            }
+            triggerSave();
+        }
+
+        // --- Live Statistics ---
+        function updateStats() {
+            const text = editor.innerText || '';
+            const words = text.split(/\s+/).filter(w => w.length > 0).length;
+            const chars = text.length;
+            const paras = text.split('\n\n').filter(p => p.trim().length > 0).length;
+            const lines = text.split('\n').length;
+            
+            const editorHeight = editor.scrollHeight;
+            const pageHeight = 1043; 
+            const pages = Math.max(1, Math.ceil(editorHeight / pageHeight));
+            
+            const readTime = Math.ceil(words / 200);
+
+            document.getElementById('statWords').innerText = words;
+            document.getElementById('statChars').innerText = chars;
+            document.getElementById('statParas').innerText = paras;
+            document.getElementById('statLines').innerText = lines;
+            document.getElementById('statPages').innerText = `${pages} / 12`;
+            document.getElementById('statReadTime').innerText = `${readTime} min`;
+
+            if(pages > 12) {
+                pageWarning.style.display = 'block';
+                document.getElementById('statPages').style.color = 'var(--danger)';
+            } else {
+                pageWarning.style.display = 'none';
+                document.getElementById('statPages').style.color = 'inherit';
+            }
+        }
+        editor.addEventListener('input', updateStats);
+
+        // --- UPDATED: Speech Tools (Voice to Text & Text to Speech) ---
+        let recognition;
+        let isDictating = false;
+        
+        if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRec();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+
+            recognition.onresult = (event) => {
+                let finalTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript + ' ';
+                    }
+                }
+                if (finalTranscript) {
+                    execCmd('insertText', finalTranscript);
+                }
+            };
+            
+            recognition.onerror = (e) => { 
+                console.error('Speech recognition error', e); 
+                if(e.error === 'not-allowed') {
+                    alert("Microphone permission denied! Browser mic access zaroori hai.");
+                }
+                stopDictation(); 
+            };
+            
+            recognition.onend = () => { 
+                if(isDictating) recognition.start(); 
+            };
+        }
+
+        function toggleDictation() {
+            if(!recognition) {
+                alert("Aapka browser Voice Typing support nahi karta. Kripya Google Chrome ka istemal karein.");
+                return;
+            }
+            
+            const btn = document.getElementById('btnDictate');
+            
+            if(isDictating) {
+                stopDictation();
+            } else {
+                recognition.lang = document.getElementById('voiceLang').value;
+                try {
+                    recognition.start();
+                    isDictating = true;
+                    btn.innerHTML = '<i class="fa-solid fa-stop"></i> Stop Voice';
+                    btn.style.backgroundColor = 'var(--danger)';
+                } catch(err) {
+                    console.error(err);
+                }
+            }
+        }
+
+        function stopDictation() {
+            if(recognition) recognition.stop();
+            isDictating = false;
+            const btn = document.getElementById('btnDictate');
+            btn.innerHTML = '<i class="fa-solid fa-microphone"></i> Start Voice';
+            btn.style.backgroundColor = 'var(--primary)';
+        }
+
+        const synth = window.speechSynthesis;
+        
+        function speakText() {
+            const text = editor.innerText.trim();
+            if(!text) {
+                alert("Pehle white page par kuch likhiye taaki main padh saku!");
+                return;
+            }
+
+            if (synth.paused) {
+                synth.resume();
+                return;
+            }
+            
+            if (synth.speaking) {
+                return; 
+            }
+            
+            synth.cancel(); 
+            let currentUtterance = new SpeechSynthesisUtterance(text);
+            currentUtterance.rate = document.getElementById('speechSpeed').value;
+            currentUtterance.lang = document.getElementById('voiceLang').value; 
+            
+            synth.speak(currentUtterance);
+        }
+        
+        function pauseSpeech() { 
+            if(synth.speaking && !synth.paused) synth.pause(); 
+        }
+        
+        function stopSpeech() { 
+            synth.cancel(); 
+        }
+
+        // --- Auto Save System ---
+        let saveTimeout;
+        function triggerSave() {
+            clearTimeout(saveTimeout);
+            saveBadge.style.opacity = '0';
+            saveTimeout = setTimeout(() => {
+                const data = {
+                    content: editor.innerHTML,
+                    title: document.getElementById('pdfTitle').value,
+                    name: document.getElementById('pdfName').value,
+                    subject: document.getElementById('pdfSubject').value,
+                    date: document.getElementById('pdfDate').value,
+                    size: document.getElementById('pdfFontSize').value,
+                    border: document.getElementById('pdfBorder').value,
+                    watermark: document.getElementById('pdfWatermark').value
+                };
+                localStorage.setItem('studentNotesData', JSON.stringify(data));
+                saveBadge.style.opacity = '1';
+                setTimeout(() => saveBadge.style.opacity = '0', 2000);
+            }, 1000);
+        }
+
+        function loadAutoSave() {
+            const dataStr = localStorage.getItem('studentNotesData');
+            if (dataStr) {
+                try {
+                    const data = JSON.parse(dataStr);
+                    editor.innerHTML = data.content || '';
+                    document.getElementById('pdfTitle').value = data.title || '';
+                    document.getElementById('pdfName').value = data.name || '';
+                    document.getElementById('pdfSubject').value = data.subject || '';
+                    document.getElementById('pdfDate').value = data.date || '';
+                    if (data.size) document.getElementById('pdfFontSize').value = data.size;
+                    if (data.border) document.getElementById('pdfBorder').value = data.border;
+                    if (data.watermark) document.getElementById('pdfWatermark').value = data.watermark;
+                    applyEditorStyles();
+                } catch(e) { console.log("Error loading save data", e); }
+            }
+            if (!document.getElementById('pdfDate').value) document.getElementById('pdfDate').valueAsDate = new Date();
+        }
+
+        editor.addEventListener('input', triggerSave);
+        document.querySelectorAll('input, select').forEach(el => el.addEventListener('input', triggerSave));
+
+        // --- PDF GENERATION ---
+        function generatePDF() {
+            const pagesCheck = parseInt(document.getElementById('statPages').innerText.split('/')[0]);
+            if (pagesCheck > 12) return alert("Your document exceeds the 12-page limit. Please shorten it.");
+
+            const title = document.getElementById('pdfTitle').value || 'Untitled Assignment';
+            const name = document.getElementById('pdfName').value || 'Student Name';
+            const subject = document.getElementById('pdfSubject').value || 'Subject';
+            const date = document.getElementById('pdfDate').value || new Date().toLocaleDateString();
+            const borderStyle = document.getElementById('pdfBorder').value;
+            const watermarkText = document.getElementById('pdfWatermark').value.trim();
+
+            const printElement = document.createElement('div');
+            printElement.style.padding = borderStyle !== 'none' ? '30px' : '40px';
+            printElement.style.color = '#000000'; 
+            printElement.style.fontFamily = 'Arial, sans-serif';
+            printElement.style.fontSize = document.getElementById('pdfFontSize').value;
+            
+            if (borderStyle !== 'none') {
+                printElement.style.border = `3px ${borderStyle} #000`;
+                printElement.style.margin = '10px';
+            }
+
+            if (watermarkText) {
+                const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><text x="50%" y="50%" transform="rotate(-45 200 200)" fill="rgba(0,0,0,0.06)" font-size="45" font-family="Arial" font-weight="bold" text-anchor="middle" dominant-baseline="middle">${watermarkText}</text></svg>`;
+                printElement.style.backgroundImage = `url('data:image/svg+xml;utf8,${encodeURIComponent(svg)}')`;
+                printElement.style.backgroundRepeat = 'repeat';
+            }
+
+            printElement.innerHTML = `
+                <div style="border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
+                    <h1 style="font-size: 24px; margin: 0 0 10px 0; text-align: center;">${title}</h1>
+                    <div style="display: flex; justify-content: space-between; font-size: 14px;">
+                        <span><b>Name:</b> ${name}</span>
+                        <span><b>Subject:</b> ${subject}</span>
+                        <span><b>Date:</b> ${date}</span>
+                    </div>
+                </div>
+            `;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.innerHTML = editor.innerHTML;
+            
+            const allElements = contentDiv.querySelectorAll('*');
+            allElements.forEach(el => {
+                el.style.pageBreakInside = 'avoid';
+                el.style.breakInside = 'avoid';
+            });
+
+            printElement.appendChild(contentDiv);
+
+            const opt = {
+                margin:       [10, 10, 10, 10], 
+                filename:     'Smart_Student_PDF.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] } 
+            };
+
+            const oldCursor = document.body.style.cursor;
+            document.body.style.cursor = 'wait';
+
+            html2pdf().set(opt).from(printElement).save().then(() => {
+                document.body.style.cursor = oldCursor;
+            }).catch(err => {
+                console.error("PDF Error: ", err);
+                alert("Error generating PDF.");
+                document.body.style.cursor = oldCursor;
+            });
+        }
+    </script>
+</body>
+</html>
